@@ -203,7 +203,6 @@ class ODISPlot:
         self.currentFig += 1
 
         norm = 100
-
         factor = 0.01
 
         orbits = np.linspace(0,len(self.diss)*factor,len(self.diss))

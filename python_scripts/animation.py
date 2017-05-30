@@ -56,12 +56,15 @@ P = 0.73
 dt = P * 0.02
 time = 0.0
 
+<<<<<<< HEAD
 def arr_split(nparray):
     half1 = nparray[:,:int(len(nparray[0])/2)]
     half2 = nparray[:,int(len(nparray[0])/2):]
 
     return np.concatenate((half2,half1),axis = 1)
 
+=======
+>>>>>>> speed_test
 
 print(p_type)
 # THESE TWO LINES ARE REQD TO PRODUCE SAVEABLE MOVIE
@@ -81,10 +84,16 @@ DATA = DATA_V
 if p_type == "velocity":
     DATA_MAG = np.sqrt(DATA_U**2 + DATA_V**2)
 elif p_type == "dissipation":
+<<<<<<< HEAD
     DATA_MAG = np.array(in_file["dissipated energy"])[start:stop+1,:,:]
 elif p_type == 'displacement':
     DATA_MAG = np.array(in_file["displacement"])[start:stop+1,:,:]
 
+=======
+    DATA_MAG = 1e3 * h * 1e-6 * (DATA_U**2 + DATA_V**2)
+elif p_type = 'displacement':
+    DATA_MAG = np.array(in_file["displacement"])[start:stop+1,:,:]
+>>>>>>> speed_test
 
 frames = stop-start
 vmin = np.amin(DATA_MAG)
@@ -109,6 +118,9 @@ if p_type == "velocity":
     ct = ax.imshow(DATA_MAG[0,:,:],vmin=vmin,vmax=vmax,cmap=plt.cm.viridis,interpolation='bicubic',extent=[0,360,90,-90])
 elif p_type == "dissipation":
     ct = ax.imshow(DATA_MAG[0,:,:],vmin=vmin,vmax=1e7,cmap=plt.cm.plasma,interpolation='bicubic',extent=[0,360,90,-90])
+    ct2 = ax.contour(lon,lat,DATA_MAG[0,:,:],levels=levels,colors='k')
+elif p_type == "displacement":
+    ct = ax.imshow(DATA_MAG[0,:,:],vmin=vmin,vmax=vmax,cmap=plt.cm.plasma,interpolation='bicubic',extent=[0,360,90,-90])
     ct2 = ax.contour(lon,lat,DATA_MAG[0,:,:],levels=levels,colors='k')
 elif p_type == "displacement":
     ct = ax.imshow(DATA_MAG[0,:,:],vmin=vmin,vmax=vmax,cmap=plt.cm.plasma,interpolation='bicubic',extent=[0,360,90,-90])
@@ -153,9 +165,10 @@ def animate(i):
         ct2 = ax.contour(lon,lat,data_plot,levels=levels,colors='k')
 
 
+
     time += dt
     ax.set_title('t = %.1f orbits'%(time/P))
-    # print("Rendering frame ", i)
+    print("Rendering frame ", i)
     return ax
 
 interval = 500#in seconds

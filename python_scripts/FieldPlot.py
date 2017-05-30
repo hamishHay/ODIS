@@ -5,6 +5,7 @@ import matplotlib as mpl
 # mpl.use('Agg')
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
 from matplotlib import cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import scipy as sc
@@ -117,9 +118,11 @@ class ODISPlot:
 
         # in_file = h5py.File("data_old.h5", 'r')
 
-        self.diss = np.array(in_file["dissipated energy avg"])[1:]
-
+        self.diss = np.array(in_file["dissipated energy avg"])[1:]*4. *np.pi*(252.1e3)**2
+        self.diss /= 1e9
         #zeros = (self.diss == 0.0)
+
+        print("Orbit Avg Dissipated Energy: " + str(np.mean(self.diss[-100:-1])) + " GW")
 
         #self.diss = self.diss[:zeros[1]]
 
@@ -134,7 +137,12 @@ class ODISPlot:
         ax = self.fig.add_subplot(self.figDim[0],self.figDim[1],self.currentFig)
         self.loadFieldAxisOptions(ax)
 
-        p1 = ax.pcolormesh(self.x,self.y,data,cmap=self.cmap,rasterized=False)
+        data = np.ma.masked_where(data == 0.0, data)
+
+        cmap = self.cmap
+        cmap.set_bad(color='k')
+
+        p1 = ax.pcolormesh(self.x,self.y,data,cmap=cmap,rasterized=False)
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("bottom", size="5%", pad=0.5)
         c1 = plt.colorbar(p1, cax = cax, format='%.' +str(cformat) + 'f',orientation="horizontal")
@@ -160,9 +168,15 @@ class ODISPlot:
 
         mag = np.flipud(mag)
 
+
+        data = np.ma.masked_where(mag == 0.0, mag)
+
+        cmap = self.cmap
+        cmap.set_bad(color='k')
+
         ax = self.fig.add_subplot(self.figDim[0],self.figDim[1],self.currentFig)
-        p1 = ax.pcolormesh(x,y,mag,cmap=self.cmap,vmin=0,rasterized=False)
-        cs1 = ax.contour(x,y,mag,8,colors='k',linewidths=0.4)
+        p1 = ax.pcolormesh(x,y,data,cmap=cmap,vmin=0,rasterized=False)
+        #cs1 = ax.contour(x,y,mag,8,colors='k',linewidths=0.4)
 
         func_u = interp2d(x,y,u,kind='cubic')
         func_v = interp2d(x,y,v,kind='cubic')
@@ -190,32 +204,40 @@ class ODISPlot:
 
         norm = 100
 
-        factor = 0.25
+        factor = 0.01
 
         orbits = np.linspace(0,len(self.diss)*factor,len(self.diss))
+        avg = np.mean(self.diss[-100:])
 
         ax = self.fig.add_subplot(self.figDim[0],self.figDim[1],self.currentFig)
         p1 = ax.semilogy(orbits,self.diss,'-',linewidth=0.8, label="Instantaneous dissipated energy")
+        p2 = ax.semilogy([orbits[0],orbits[-1]],[avg,avg],'--',color='C0', linewidth=0.6, alpha = 0.5, label="Average dissipated energy")
 
         ax.set_xlim([min(orbits),max(orbits)])
         # ax.set_ylim([0,max(self.diss)+0.2])
         # ax.set_ylim([1e-3,1e2])
 
-        print(np.mean(self.diss[200:401]))
-        print(np.mean(self.diss[800:]))
+        # print(np.mean(self.diss[200:401]))
+        # print(np.mean(self.diss[800:]))
 
         ax.set_xlabel('Orbit',fontsize=self.labelSize+1)
-        ax.set_ylabel('Dissipation (\si{\watt\per\metre\squared})',fontsize=self.labelSize+1)
+        ax.set_ylabel('Ocean Dissipation (\si{\giga\watt})',fontsize=self.labelSize+1)
 
         ax.tick_params(axis='both', which='major', labelsize=self.slabelSize)
-        ax.set_title('Enceladus Eccentricity Tide Dissipation w/ Ocean Loading',fontsize=self.titleSize)
+        ax.set_title('Enceladus eccentricity tide dissipation, $h_o = 1$km, $h_s = 1$km',fontsize=self.titleSize)
 
-        legend = plt.legend(loc=2)
+        legend = plt.legend(loc=1)
         legend.get_frame().set_linewidth(0.5)
         for label in legend.get_texts():
             label.set_fontsize(10)
         for label in legend.get_lines():
             label.set_linewidth(0.8)
+
+        loc = plticker.MultipleLocator(1)
+        ax.xaxis.set_minor_locator(loc)
+
+        ax.grid(which='major',alpha=0.8)
+        ax.grid(which='minor',alpha=0.3)
 
 
     def SetSuperTitle(self, title):
@@ -226,7 +248,7 @@ class ODISPlot:
         plt.close()
 
     def SaveFig(self):
-        #self.fig.savefig(self.saveName +  '.pdf',bbox_inches='tight',pad_inches=1)
+        self.fig.savefig(self.saveName +  '.pdf',bbox_inches='tight')#,pad_inches=1)
         self.fig.savefig(self.saveName +  '.png', format='PNG',bbox_inches='tight',dpi=300)
 
 if __name__=="__main__":
@@ -267,7 +289,7 @@ if __name__=="__main__":
 
         ODIS.ShowFig()
 
-        # ODIS.SaveFig()
+        ODIS.SaveFig()
 
     elif option == 3:
 

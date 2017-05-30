@@ -160,6 +160,7 @@ public:
   double * loadK;
   double * loadH;
   double * gammaFactor;
+  double nu_2;
 
   int l_max;
 

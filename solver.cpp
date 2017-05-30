@@ -181,6 +181,8 @@ Solver::Solver(int type, int dump, Globals * Consts, Mesh * Grid, Field * UGradL
 
     double mu_bar = 0.0;
 
+
+    // OCEAN LOADING
     for (int l=0; l<l_max+1; l++)
     {
         mu_bar = 6.78e9/(1610.0*consts->g.Value()*consts->radius.Value());
@@ -192,10 +194,25 @@ Solver::Solver(int type, int dump, Globals * Consts, Mesh * Grid, Field * UGradL
         gammaFactor[l] = 1.0 - (1.0 + loadK[l] - loadH[l]) * 3000.0 / ((2*l + 1) * 1610.0);
     }
 
-    cosMinusB = new double[dUlat->fieldLonLen];
-    cosPlusB = new double[dUlat->fieldLonLen];
-    sinMinusB = new double[dUlon->fieldLonLen];
-    sinPlusB = new double[dUlon->fieldLonLen];
+    // SHELL BETA FACTOR
+    std::ifstream beta_file(consts->path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "enc_1km_beta.txt", std::ifstream::in);
+    std::string line;
+    double inputValue = 0.0;
+
+    beta_file.is_open();
+    for (int i = 0; i < l_max+1; i++) {
+        std::getline(beta_file, line, '\n');
+        std::stringstream inputString(line);
+        inputString >> inputValue;
+        gammaFactor[i] = inputValue;
+        std::cout<<i<<'\t'<<inputValue<<std::endl;
+    }
+    beta_file.close();
+
+    //cosMinusB = new double[dUlat->fieldLonLen];
+    //cosPlusB = new double[dUlat->fieldLonLen];
+    //sinMinusB = new double[dUlon->fieldLonLen];
+    //sinPlusB = new double[dUlon->fieldLonLen];
 
     if (consts->potential.Value() == "ECC_RAD")         tide = ECC_RAD;
     else if (consts->potential.Value() == "ECC_LIB")    tide = ECC_LIB;
@@ -270,6 +287,8 @@ int Solver::InitialConditions(void) {
     }
     return 0;
 };
+
+
 
 void Solver::Solve() {
     outstring << "Entering solver: ";
@@ -585,9 +604,10 @@ void Solver::UpdateSurfaceHeight(){
     int j_h = 0;
 
 
+    hRadius = 1.0 / r;
     for (int i = 1; i < etaLatLen-1; i++) {
+      cosLat = eta->cosLat[i];
         for (int j = 0; j < etaLonLen; j++) {
-            cosLat = eta->cosLat[i];
             i_h = i*2;
 
             j_h = j*2;
@@ -609,7 +629,6 @@ void Solver::UpdateSurfaceHeight(){
 
             uGrad = (eastu - westu) / vdLon;
 
-            hRadius = 1.0 / r;
 
             etaNewArray[i][j] = hRadius/cosLat*(-vGrad - uGrad)*dt + etaOldArray[i][j];
         }
@@ -679,10 +698,10 @@ int Solver::ExtractSHCoeff(void) {
     count = 0;
     for (j=0; j<l_max+1; j++) {
         for (k=0; k<l_max+1; k++) {
-            if (fabs(fort_harm_coeff[count]) < 1e-6) SH_cos_coeff[k][j] = 0.0;
+            if (fabs(fort_harm_coeff[count]) < 1e-20) SH_cos_coeff[k][j] = 0.0;
             else SH_cos_coeff[k][j] = fort_harm_coeff[count];
 
-            if (fabs(fort_harm_coeff[count+1]) < 1e-6) SH_sin_coeff[k][j] = 0.0;
+            if (fabs(fort_harm_coeff[count+1]) < 1e-20) SH_sin_coeff[k][j] = 0.0;
             else SH_sin_coeff[k][j] = fort_harm_coeff[count+1];
 
             count+=2;
@@ -716,12 +735,12 @@ int Solver::UpdateLoading(void) {
         for (j = 0; j < vLonLen; j++) {
             loadingDLatTotal = 0.;
             oceanLoadingArrayV[i][j] = 0.0;
-            for (l=0; l<l_max+1; l++) {
+            for (l=1; l<l_max+1; l++) {
                 loadingDLat = 0.0;
                 for (m=0; m<=l; m++) {
                     loadingDLat += vdLegendreArray[i][l][m] * (SH_cos_coeff[l][m]*vCosMLon[j][m] + SH_sin_coeff[l][m]*vSinMLon[j][m]);
                 }
-                loadingDLat *= gammaFactor[l];
+                loadingDLat *= gammaFactor[l-1];
                 loadingDLatTotal += loadingDLat;
             }
             oceanLoadingArrayV[i][j] = loadingDLatTotal;
@@ -738,7 +757,7 @@ int Solver::UpdateLoading(void) {
                 for (m=0; m<=l; m++) {
                     loadingDLon += uLegendreArray[i][l][m] * (-SH_cos_coeff[l][m]*(double)m*uSinMLon[j][m] + SH_sin_coeff[l][m]*(double)m*uCosMLon[j][m]);
                 }
-                loadingDLon *= gammaFactor[l];
+                loadingDLon *= gammaFactor[l-1];
                 loadingDLonTotal += loadingDLon;
 
             }
@@ -792,7 +811,7 @@ int Solver::Explicit() {
         UpdateSurfaceHeight();
 
         if (!loading) {
-            if (simulationTime > 1.1*consts->endTime.Value()) {
+            if (simulationTime > 0.1*consts->endTime.Value()) {
                 printf("Kicking in ocean loading\n");
                 loading = true;
             }

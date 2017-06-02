@@ -129,6 +129,8 @@ Solver::Solver(int type, int dump, Globals * Consts, Mesh * Grid, Field * UGradL
 
     etaLegendreArray = new double[etaLatLen*(l_max+1)*(l_max+1)];
 
+
+
     uLegendreArray = new double**[uLatLen];
     for (int i=0; i<uLatLen; i++) {
         uLegendreArray[i] = new double*[l_max+1];
@@ -211,6 +213,8 @@ Solver::Solver(int type, int dump, Globals * Consts, Mesh * Grid, Field * UGradL
 
         gammaFactor[l] = 1.0 - (1.0 + loadK[l] - loadH[l]) * 3000.0 / ((2*l + 1) * 1610.0);
     }
+
+
 
     // SHELL BETA FACTOR
     std::ifstream beta_file(consts->path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "enc_1km_beta.txt", std::ifstream::in);
@@ -702,10 +706,10 @@ int Solver::ExtractSHCoeff(void) {
     for (j=0; j<l_max+1; j++) {
         for (k=0; k<l_max+1; k++) {
             if (fabs(fort_harm_coeff[count]) < 1e-20) SH_cos_coeff[k*(l_max+1) + j] = 0.0;
-            else SH_cos_coeff[k][j] = fort_harm_coeff[count];
+            else SH_cos_coeff[k*(l_max+1) + j] = fort_harm_coeff[count];
 
             if (fabs(fort_harm_coeff[count+1]) < 1e-20) SH_sin_coeff[k*(l_max+1) + j] = 0.0;
-            else SH_sin_coeff[k][j] = fort_harm_coeff[count+1];
+            else SH_sin_coeff[k*(l_max+1) + j] = fort_harm_coeff[count+1];
 
             count+=2;
         }
@@ -837,6 +841,8 @@ int Solver::Explicit() {
     double timeStepCount = 0;
     int inc = (int) (consts->period.Value()/dt);
 
+
+
     InitialConditions(); // SHOULD BE IN CONSTRUCTOR
 
     outstring << "Entering time loop:\n\n";
@@ -869,6 +875,7 @@ int Solver::Explicit() {
         UpdateEastVel();
 
         UpdateSurfaceHeight();
+
 
         if (!loading) {
             if (simulationTime > 0.1*consts->endTime.Value()) {
@@ -1215,8 +1222,6 @@ void Solver::CreateHDF5FrameWork(void) {
     // char dataFile[] = "DATA/data.h5";
     char dataFile[1024];
     std::strcpy(dataFile, (Out->dataPath).c_str());
-    // std::cout << "HERE" << '\n';
-
 
     start = new hsize_t[3];
     count = new hsize_t[3];
@@ -1229,9 +1234,6 @@ void Solver::CreateHDF5FrameWork(void) {
 
     // Create HDF5 file
     file = H5Fcreate(dataFile, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-    // std::cout << "HERE" << '\n';
-
 
     dims_eta = new hsize_t[3];
     dims_eta[0] = 1;

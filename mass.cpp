@@ -7,6 +7,7 @@
 #include <math.h>
 
 Mass::Mass(Mesh * mesh, int lat, int lon, Globals * Consts, Field * Eta, Depth * Thickness) : Field(mesh, lat, lon) {
+
 	consts = Consts;
 	eta = Eta;
 	thickness = Thickness;

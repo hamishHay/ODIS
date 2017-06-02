@@ -42,6 +42,8 @@ int main(void)
   // with 1 (currently set to Titan parameters). All constants are stored in the
   // class "Globals".
 
+
+
   Globals * constants = new Globals(0);
 
   // Create the numerical grid using the minimum node spacing from "constants"
@@ -60,9 +62,6 @@ int main(void)
   Field * eta = new Field(grid,0,0); // Surface displacement. Cell centered.
   Field * dUlat = new Field(grid,1,0); // Latitudinal tidal potential gradient. Staggered south.
   Field * dUlon = new Field(grid,0,1); // Longitudinal tidal potential gradient. Staggered east.
-
-  v->CalcWeights(1, 0, u);
-  u->CalcWeights(0, 1, v);
 
   Depth * h = new Depth(grid);
 

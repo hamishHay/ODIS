@@ -90,12 +90,12 @@ void OutFiles::WelcomeMessage(void) {
 
 	sstream <<std::endl<<std::endl<< "        | Welcome to Ocean Dissipation in Icy Satellites (ODIS)! |" << std::endl;
 	sstream << "        |--------------------------------------------------------|" << std::endl;
-	sstream << "        |               ___________ _____ _____                  |" << std::endl;
-	sstream << "        |              |  _  |  _  \\_   _/  ___|                 |" << std::endl;
-	sstream << "        |              | | | | | | | | | \\ `--.                  |" << std::endl;
-	sstream << "        |              | | | | | | | | |  `--. \\                 |" << std::endl;
-	sstream << "        |              \\ \\_/ / |/ / _| |_/\\__/ /                 |" << std::endl;
-	sstream << "        |               \\___/|___/  \\___/\\____/                  |" << std::endl;
+	sstream << "        |                ___________ _____ _____                 |" << std::endl;
+	sstream << "        |               |  _  |  _  \\_   _/  ___|                |" << std::endl;
+	sstream << "        |               | | | | | | | | | \\ `--.                 |" << std::endl;
+	sstream << "        |               | | | | | | | | |  `--. \\                |" << std::endl;
+	sstream << "        |               \\ \\_/ / |/ / _| |_/\\__/ /                |" << std::endl;
+	sstream << "        |                \\___/|___/  \\___/\\____/                 |" << std::endl;
 	sstream << "        |                                                        |" << std::endl;
 	sstream << "        |--------------------------------------------------------|" << std::endl;
 	sstream << "        | ODIS is a numerical finite difference ocean dynamics   |" << std::endl;
@@ -113,8 +113,9 @@ void OutFiles::WelcomeMessage(void) {
 void OutFiles::TerminateODIS(void) {
 	std::ostringstream sstream;
 
-	sstream << "Terminating ODIS." << std::endl;
+	sstream << "TERMINATING ODIS." << std::endl;
 	WriteError(&sstream);
+  std::cout<< "FATAL ERROR HAS OCCURED. SEE ERROR.TXT FOR DETAILS"<<std::endl;
 	std::exit(0);
 };
 

@@ -8,6 +8,9 @@
 //   Version              Date                   Programmer
 //     0.1      |        13/09/2016        |        H. Hay        |
 // ---- Initial version of ODIS, described in Hay and Matsuyama (2016)
+//     0.2      |        02/06/2016        |        H. Hay        |
+// ---- Incorporating ice shell constants to be stored in globals from Matsuyama and Hay (tbd)
+
 
 #ifdef _WIN32
 #include <direct.h>
@@ -80,6 +83,9 @@ Globals::Globals(int action) {
 
     h.SetStringID("ocean thickness");
     allGlobals.push_back(&h);
+
+    hShell.SetStringID("ice shell thickness");
+    allGlobals.push_back(&hShell);
 
     g.SetStringID("surface gravity");
     allGlobals.push_back(&g);
@@ -303,6 +309,8 @@ int Globals::ReadGlobals(void)
     Output.TerminateODIS();
   }
 
+  if (hShell.Value() > 0.0) GetShellCoeffs();
+
   return 0;
 };
 
@@ -322,9 +330,13 @@ void Globals::SetDefault(void)
 
   //Love reduction factor
   //loveReduct.SetValue(1 + loveK2.Value() - loveH2.Value());
-  loveReduct.SetValue(0.920012);
+  loveReduct.SetValue(1.0);
+
   //Ocean thickness
   h.SetValue(400);
+
+  //Ice shell thickness
+  hShell.SetValue(1e3);
 
   //Surface gravity
   g.SetValue(1.35);
@@ -413,4 +425,119 @@ void Globals::OutputConsts(void)
 
     Output.Write(OUT_MESSAGE, &outstring);
   }
+};
+
+int Globals::GetShellCoeffs(void)
+{
+  double hs;
+
+  hs = hShell.Value();
+
+  std::cout<<fmod(hs,1.0)<<std::endl;
+
+  // Check if ice shell value is within table range
+  if ((hs < 1e3) || (hs > 100e3)) {
+    outstring << "ERROR:\t\t User selected ice shell thickness of " << hs/1e3;
+    outstring << " km is outside of calculated shell thickness range. " << std::endl;
+    outstring << "\t\t Shell behaviour is therefore undefined. "<<std::endl;
+
+    Output.Write(ERR_MESSAGE, &outstring);
+
+    Output.TerminateODIS();
+  }
+  // Ice shell thickness must be an integer value in kilometers
+  else if (fmod(hs,1.0) > 1e-8) {
+    double b_l, b_r, b_interp;       // i and i+1 and interpolated beta values
+    double dhs;                      // distance from nearest int shell thickness
+    int count_col;                   // counter for counting file column position
+    int count_row;                   // counter for counting file row position
+    std::string line, val;           // strings for column and individual number
+
+    outstring << "WARNING:\t User selected shell thickness of " << hs/1e3;
+    outstring << " km is not an integer value of kilometers." << std::endl;
+    outstring << "\t\t ODIS will interpolate shell coefficients from between ";
+    outstring << int(hs)/1000 << " km and " << int(hs)/1000 + 1 << " km." << std::endl;
+
+    Output.Write(ERR_MESSAGE, &outstring);
+
+    // in stream for input.in file
+    std::ifstream betaFile(path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "beta_hs1km_to_hs100km_lmax30.txt",std::ifstream::in);
+
+    dhs = fmod(hs/1e3,1.0);
+
+    count_col = 1;
+    count_row = 1;
+    if (betaFile.is_open())
+    {
+
+      outstring << "Beta coefficients found." << std::endl;
+      Output.Write(OUT_MESSAGE, &outstring);
+
+      while (std::getline(betaFile, line) && count_row <= l_max.Value())
+      {
+        b_l = 0.0;
+        b_r = 0.0;
+        b_interp = 0.0;
+
+        std::istringstream line_ss(line);
+        while (std::getline(line_ss,val,'\t'))
+        {
+          if (count_col == int(hs)/1000) {
+            b_l = std::atof(val.c_str());
+          }
+          else if (count_col == int(hs)/1000+1)
+          {
+            b_r = std::atof(val.c_str());
+            count_col = 1;
+            break;
+          }
+          count_col++;
+        }
+
+        b_interp = b_l + dhs * (b_r - b_l)/1.0;
+        count_row++;
+      };
+
+      betaFile.close();
+    }
+
+  }
+  else
+  {
+    double b;                        // beta values
+    int count_col;                   // counter for counting file column position
+    int count_row;                   // counter for counting file row position
+    std::string line, val;           // strings for column and individual number
+
+    std::ifstream betaFile(path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "beta_hs1km_to_hs100km_lmax30.txt",std::ifstream::in);
+
+    count_col = 1;
+    count_row = 1;
+    if (betaFile.is_open())
+    {
+
+      outstring << "Beta coefficients found." << std::endl;
+      Output.Write(OUT_MESSAGE, &outstring);
+
+      while (std::getline(betaFile, line) && count_row <= l_max.Value())
+      {
+        b = 0.0;
+        std::istringstream line_ss(line);
+        while (std::getline(line_ss,val,'\t'))
+        {
+          if (count_col == int(hs)/1000) {
+            b = std::atof(val.c_str());
+            count_col = 1;
+            break;
+          }
+          count_col++;
+        }
+        count_row++;
+      };
+
+      betaFile.close();
+    }
+
+  }
+
 };

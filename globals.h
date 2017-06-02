@@ -10,6 +10,8 @@
 //   Version              Date                   Programmer
 //     0.1      |        13/09/2016        |        H. Hay        |
 // ---- Initial version of ODIS, described in Hay and Matsuyama (2016)
+//     0.2      |        02/06/2016        |        H. Hay        |
+// ---- Incorporating ice shell constants to be stored in globals from Matsuyama and Hay (tbd)
 
 
 #ifndef GLOBALS_H
@@ -76,6 +78,7 @@ public:
   GlobalVar<double> loveH2; // h_2 Love Number
   GlobalVar<double> loveReduct; //Love's reduction factor
   GlobalVar<double> h; //Ocean thickness
+  GlobalVar<double> hShell; //Ice shell thickness
   GlobalVar<double> g; //Surface Gravity
   GlobalVar<double> a; //SemiMajor Axis
   GlobalVar<double> e; //Eccentricity
@@ -106,12 +109,17 @@ public:
   // Time in fraction of orbital period for output of all parameters
   GlobalVar<double> outputTime;
 
+  double beta_shell;    // Beta constant for ice shell effect (l=2)
+  double * nu_shell;    // Nu constants for ice shell effect (l=2 to l=l_max)
+
   // constructor to initialise and/or read all variables from input file.
   Globals();
   Globals(int action); // action is either 1 (use defaults) or 0 (read input)
 
   // Member function to read global variables from input.in file.
   int ReadGlobals(void);
+
+  int GetShellCoeffs(void);
 };
 
 

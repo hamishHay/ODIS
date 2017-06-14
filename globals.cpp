@@ -165,6 +165,7 @@ Globals::Globals(int action) {
   // Convert end time from units of orbital period to seconds.
   endTime.SetValue(endTime.Value()*period.Value());
 
+
   // identify friction type and select the corresponding enum value.
   if (friction.Value() == "LINEAR") fric_type = LINEAR;
   else if (friction.Value() == "QUADRATIC") fric_type = QUADRATIC;
@@ -309,8 +310,10 @@ int Globals::ReadGlobals(void)
     Output.TerminateODIS();
   }
 
-  if (hShell.Value() > 0.0) GetShellCoeffs();
-
+  if (hShell.Value() > 0.0) {
+    beta_shell = new double[l_max.Value()+1];
+    GetShellCoeffs();
+  }
   return 0;
 };
 
@@ -422,7 +425,18 @@ void Globals::OutputConsts(void)
     else if (allGlobals[i]->IsType("string")) {
       outstring << ((GlobalVar<std::string > *) allGlobals[i])->Value();
     }
+    Output.Write(OUT_MESSAGE, &outstring);
+  }
 
+  if (hShell.Value() > 0.0)     // output shell constants for each l
+  {
+    outstring <<"\t\t "<<std::left<< std::setw(varWidth) << std::setfill(separator)<<"Beta factors";
+    outstring << ""<<"l=" << 0 <<" "<< beta_shell[0]<<std::endl;
+    for (int i = 1; i < l_max.Value() + 1; i++)
+    {
+      outstring <<"\t\t "<<std::left<< std::setw(varWidth) << std::setfill(separator);
+      outstring <<"" << "l=" << i <<" "<< beta_shell[i]<<std::endl;
+    }
     Output.Write(OUT_MESSAGE, &outstring);
   }
 };
@@ -432,8 +446,6 @@ int Globals::GetShellCoeffs(void)
   double hs;
 
   hs = hShell.Value();
-
-  std::cout<<fmod(hs,1.0)<<std::endl;
 
   // Check if ice shell value is within table range
   if ((hs < 1e3) || (hs > 100e3)) {
@@ -445,9 +457,10 @@ int Globals::GetShellCoeffs(void)
 
     Output.TerminateODIS();
   }
-  // Ice shell thickness must be an integer value in kilometers
-  else if (fmod(hs,1.0) > 1e-8) {
-    double b_l, b_r, b_interp;       // i and i+1 and interpolated beta values
+  // if ice shell thickness is not an integer value in kilometers, we must
+  // interpolate
+  else if (fmod(hs/1e3,1.0) > 1e-8) {
+    double x_l, x_r, x_interp;       // i and i+1 and interpolated beta values
     double dhs;                      // distance from nearest int shell thickness
     int count_col;                   // counter for counting file column position
     int count_row;                   // counter for counting file row position
@@ -465,6 +478,10 @@ int Globals::GetShellCoeffs(void)
 
     dhs = fmod(hs/1e3,1.0);
 
+    // --------- h1 --------- h ------------- h2 --------
+    //             <--------->
+    //                 dhs
+
     count_col = 1;
     count_row = 1;
     if (betaFile.is_open())
@@ -475,36 +492,79 @@ int Globals::GetShellCoeffs(void)
 
       while (std::getline(betaFile, line) && count_row <= l_max.Value())
       {
-        b_l = 0.0;
-        b_r = 0.0;
-        b_interp = 0.0;
+        x_l = 0.0;
+        x_r = 0.0;
+        x_interp = 0.0;
 
         std::istringstream line_ss(line);
         while (std::getline(line_ss,val,'\t'))
         {
-          if (count_col == int(hs)/1000) {
-            b_l = std::atof(val.c_str());
+          if (count_col == int(hs)/1000) {          // get h1 value
+            x_l = std::atof(val.c_str());
           }
-          else if (count_col == int(hs)/1000+1)
+          else if (count_col == int(hs)/1000+1)     // get h2 value
           {
-            b_r = std::atof(val.c_str());
+            x_r = std::atof(val.c_str());
             count_col = 1;
             break;
           }
           count_col++;
         }
 
-        b_interp = b_l + dhs * (b_r - b_l)/1.0;
+        x_interp = x_l + dhs * (x_r - x_l)/1.0;     // linear interpolate to find h
+        beta_shell[count_row] = x_interp;
         count_row++;
       };
 
       betaFile.close();
     }
 
+    std::ifstream nuFile(path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "nu_hs1km_to_hs100km_l2.txt",std::ifstream::in);
+
+    count_col = 1;
+    count_row = 1;
+    if (nuFile.is_open())
+    {
+
+      outstring << "Nu coefficients found." << std::endl;
+      Output.Write(OUT_MESSAGE, &outstring);
+
+      while (std::getline(nuFile, line) && count_row <= 2)
+      {
+        x_l = 0.0;
+        x_r = 0.0;
+        x_interp = 0.0;
+
+        std::istringstream line_ss(line);
+        while (std::getline(line_ss,val,'\t'))
+        {
+          if (count_col == int(hs)/1000) {
+            x_l = std::atof(val.c_str());
+          }
+          else if (count_col == int(hs)/1000+1)
+          {
+            x_r = std::atof(val.c_str());
+            count_col = 1;
+            break;
+          }
+          count_col++;
+        }
+
+        x_interp = x_l + dhs * (x_r - x_l)/1.0;
+        nu_shell = x_interp;
+
+        count_row++;
+      };
+
+      nuFile.close();
+    }
+    loveReduct.SetValue(nu_shell);
+
+
   }
   else
   {
-    double b;                        // beta values
+    double x;                        // beta values
     int count_col;                   // counter for counting file column position
     int count_row;                   // counter for counting file row position
     std::string line, val;           // strings for column and individual number
@@ -521,23 +581,64 @@ int Globals::GetShellCoeffs(void)
 
       while (std::getline(betaFile, line) && count_row <= l_max.Value())
       {
-        b = 0.0;
+        x = 0.0;
         std::istringstream line_ss(line);
         while (std::getline(line_ss,val,'\t'))
         {
           if (count_col == int(hs)/1000) {
-            b = std::atof(val.c_str());
+            x = std::atof(val.c_str());
             count_col = 1;
             break;
+
           }
           count_col++;
         }
+
+        beta_shell[count_row] = x;
         count_row++;
       };
 
       betaFile.close();
     }
 
+    std::ifstream nuFile(path + SEP + "SHELL_COEFFS" + SEP + "ENCELADUS" + SEP + "nu_hs1km_to_hs100km_l2.txt",std::ifstream::in);
+
+    count_col = 1;
+    count_row = 1;
+    if (nuFile.is_open())
+    {
+
+      outstring << "Nu coefficients found." << std::endl;
+      Output.Write(OUT_MESSAGE, &outstring);
+
+      while (std::getline(nuFile, line) && count_row <= 2)
+      {
+        x = 0.0;
+
+        std::istringstream line_ss(line);
+        while (std::getline(line_ss,val,'\t'))
+        {
+          if (count_col == int(hs)/1000) {
+            x = std::atof(val.c_str());
+
+            count_col = 1;
+            break;
+
+          }
+          count_col++;
+        }
+        nu_shell = x;
+
+        count_row++;
+      };
+
+      nuFile.close();
+    }
+
+    loveReduct.SetValue(nu_shell);
   }
+
+  beta_shell[0] = 0.0;
+  loveReduct.SetValue(1.0);
 
 };

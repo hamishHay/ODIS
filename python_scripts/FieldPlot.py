@@ -83,23 +83,20 @@ class ODISPlot:
 
         # in_file = h5py.File("data_old.h5", 'r')
 
-        self.data_eta = np.array(in_file["displacement"][self.orbit])
-        self.data_u = np.array(in_file["east velocity"][self.orbit])
-        self.data_v = np.array(in_file["north velocity"][self.orbit])
-
         if field=="displacement":
-            self.data = self.data_eta
+            self.data = np.array(in_file["displacement"][self.orbit])
             name = name[2]
-            self.caxisLabel = "Dispclacement, $\\eta$ (m)"
+            self.caxisLabel = "Displacement, $\\eta$ (m)"
         elif field=="north_vel":
-            self.data = self.data_v
+            self.data = np.array(in_file["north velocity"][self.orbit])
             name = name[1]
             self.caxisLabel = "North Velocity, $v$ (\\si{\\metre\\per\\second})"
         elif field=="east_vel":
-            self.data = self.data_u
+            self.data = np.array(in_file["east velocity"][self.orbit])
             name = name[0]
             self.caxisLabel = "East Velocity, $v$ (\\si{\\metre\\per\\second})"
         elif field=="dissipation":
+            self.data = np.array(in_file["dissipated energy"][self.orbit])
             name = name[3]
             self.caxisLabel = "Dissipated Energy, [\si{\watt}]"
         else:
@@ -118,7 +115,7 @@ class ODISPlot:
 
         # in_file = h5py.File("data_old.h5", 'r')
 
-        self.diss = np.array(in_file["dissipated energy avg"])[1:]*4. *np.pi*(252.1e3)**2
+        self.diss = np.array(in_file["dissipated energy avg"])[1:] * 4*np.pi * (252.1e3)**2
         self.diss /= 1e9
         #zeros = (self.diss == 0.0)
 
@@ -128,7 +125,7 @@ class ODISPlot:
 
         return self.diss
 
-    def PlotField(self,data=[],cformat=5,cticks=[]):
+    def PlotField(self,data=[],cformat=2,cticks=[]):
         self.currentFig += 1
 
         if len(data) == 0:
@@ -138,6 +135,8 @@ class ODISPlot:
         self.loadFieldAxisOptions(ax)
 
         data = np.ma.masked_where(data == 0.0, data)
+
+        print(np.amax(data))
 
         cmap = self.cmap
         cmap.set_bad(color='k')
@@ -203,7 +202,7 @@ class ODISPlot:
         self.currentFig += 1
 
         norm = 100
-        factor = 0.01
+        factor = 0.05
 
         orbits = np.linspace(0,len(self.diss)*factor,len(self.diss))
         avg = np.mean(self.diss[-100:])
@@ -265,16 +264,16 @@ if __name__=="__main__":
         ODIS.ReadFieldData("displacement")
         ODIS.PlotField(cticks = [])
 
-        data_v = ODIS.ReadFieldData("north_vel")
-        data_u = ODIS.ReadFieldData("east_vel")
+        # data_v = ODIS.ReadFieldData("north_vel")
+        # data_u = ODIS.ReadFieldData("east_vel")
 
-        ODIS.PlotVelocity(cformat=2,scale=1/0.1,cticks=[])
+        # ODIS.PlotVelocity(cformat=2,scale=1/0.1,cticks=[])
 
         ODIS.SetSuperTitle("Test")
 
         ODIS.ShowFig()
 
-        # ODIS.SaveFig()
+        ODIS.SaveFig()
 
     elif option == 2:
 
@@ -298,10 +297,12 @@ if __name__=="__main__":
 
         ODIS = ODISPlot(orbitnum=num,figdim=(1,2),figsize=(10,3),saveName="Test")
 
-        ODIS.ReadFieldData("north_vel")
+        data_v = ODIS.ReadFieldData("north_vel")
         ODIS.PlotField(cticks = [])
         data_u = ODIS.ReadFieldData("east_vel")
         ODIS.PlotField(cticks = [])
+
+        print(data_v)
 
         ODIS.SetSuperTitle("Test")
 

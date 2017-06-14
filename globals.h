@@ -109,8 +109,8 @@ public:
   // Time in fraction of orbital period for output of all parameters
   GlobalVar<double> outputTime;
 
-  double beta_shell;    // Beta constant for ice shell effect (l=2)
-  double * nu_shell;    // Nu constants for ice shell effect (l=2 to l=l_max)
+  double * beta_shell;    // Beta constant for ice shell effect (l=2)
+  double nu_shell;        // Nu constants for ice shell effect (l=2 to l=l_max)
 
   // constructor to initialise and/or read all variables from input file.
   Globals();

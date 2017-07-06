@@ -75,7 +75,7 @@ void Energy::UpdateDtDissEAvg(void) {
 	switch (consts->fric_type) {
 		//Linear dissipation
 	case LINEAR:
-		dtDissEAvg[timePos] = 2 * dtKinEAvg[timePos] * consts->alpha.Value(); //Joules per meter^2
+		dtDissEAvg[timePos] = 2 * dtKinEAvg[timePos] * consts->alpha.Value(); //Watts per meter^2
 		break;
 	case QUADRATIC:
 		dtDissEAvg[timePos] = 2 * dtKinEAvg[timePos] * consts->alpha.Value()/consts->h.Value();

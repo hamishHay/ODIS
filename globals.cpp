@@ -108,8 +108,8 @@ Globals::Globals(int action) {
     alpha.SetStringID("friction coefficient");
     allGlobals.push_back(&alpha);
 
-		l_max.SetStringID("sh degree");
-		allGlobals.push_back(&l_max);
+	l_max.SetStringID("sh degree");
+	allGlobals.push_back(&l_max);
 
     dLat.SetStringID("latitude spacing");
     allGlobals.push_back(&dLat);
@@ -639,6 +639,6 @@ int Globals::GetShellCoeffs(void)
   }
 
   beta_shell[0] = 0.0;
-  loveReduct.SetValue(1.0);
+  // loveReduct.SetValue(1.0);
 
 };

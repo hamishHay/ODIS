@@ -475,7 +475,7 @@ void Solver::UpdateEastVel(){
             dSurfLon = (eastEta - westEta) / (etadLon);
 
             coriolis = coriolisFactor * vNEAvgArray[i][j];
-            tidalForce = tidalFactor * dUlonArray[i][j] * r * uCosLat[i];
+            tidalForce = tidalFactor * dUlonArray[i][j];
 
 
             if (!loading) {
@@ -487,12 +487,12 @@ void Solver::UpdateEastVel(){
                 surfHeight = 0.0;
             }
 
-            coriolis = 0.0;
-            surfHeight = 0.0;
-            oceanLoadingTerm = 0.0;
-            uDissArray[i][j] = 0.0;
+            // surfHeight = 0.0;
+            // oceanLoadingTerm = 0.0;
+            // coriolis = 0.0;
+            // uDissArray[i][j] = 0.0;
 
-            uNewArray[i][j] = (coriolis - surfHeight - oceanLoadingTerm + tidalForce - uDissArray[i][j]);//*dt + uOldArray[i][j];
+            uNewArray[i][j] = (coriolis - surfHeight - oceanLoadingTerm + tidalForce - uDissArray[i][j])*dt + uOldArray[i][j];
         }
     }
 
@@ -603,14 +603,14 @@ int Solver::UpdateNorthVel(){
 
             coriolis = coriolisFactor*uSWAvgArray[i][j];
 
-            tidalForce = loveRadius * dUlatArray[i][j] * r;
+            tidalForce = loveRadius * dUlatArray[i][j];
 
-            coriolis = 0.0;
-            surfHeight = 0.0;
-            oceanLoadingTerm = 0.0;
-            vDissArray[i][j] = 0.0;
+            // coriolis = 0.0;
+            // surfHeight = 0.0;
+            // oceanLoadingTerm = 0.0;
+            // vDissArray[i][j] = 0.0;
 
-            vNewArray[i][j] = (-coriolis - surfHeight - oceanLoadingTerm + tidalForce - vDissArray[i][j]);//*dt + vOldArray[i][j];
+            vNewArray[i][j] = (-coriolis - surfHeight - oceanLoadingTerm + tidalForce - vDissArray[i][j])*dt + vOldArray[i][j];
 
         }
     }
@@ -872,11 +872,11 @@ int Solver::Explicit() {
         UpdateNorthVel();
         UpdateEastVel();
 
-        // UpdateSurfaceHeight();
+        UpdateSurfaceHeight();
 
 
         if (!loading) {
-            if (simulationTime > 1.1*consts->endTime.Value()) {
+            if (simulationTime > 0.1*consts->endTime.Value()) {
                 printf("Kicking in ocean loading\n");
                 loading = true;
             }
@@ -889,7 +889,7 @@ int Solver::Explicit() {
             // flag = true;
         }
         // else InterpPoles();
-        // InterpPoles();
+        InterpPoles();
 
         for (int i = 0; i < vLatLen; i++) {
             for (int j = 0; j < vLonLen; j++) {
@@ -918,7 +918,7 @@ int Solver::Explicit() {
             orbitNumber++;
             timeStepCount -= consts->period.Value();
             // std::cout<<simulationTime<<std::endl;
-            std::cout<<std::fixed << std::setprecision(8) << simulationTime<<std::endl;
+            // std::cout<<std::fixed << std::setprecision(8) << simulationTime<<std::endl;
             printf("TIME: %.2f, number: %d, dissipation: %.3f, h_0: %.3f\n", simulationTime/consts->period.Value(), output, energy->currentDissEAvg, consts->h.Value());
 
             energy->UpdateOrbitalKinEAvg(inc);
@@ -945,7 +945,7 @@ int Solver::Explicit() {
 
             outCount++;
 
-            std::cout<<std::fixed << std::setprecision(8) << simulationTime<<std::endl;
+            // std::cout<<std::fixed << std::setprecision(8) << simulationTime<<std::endl;
 
             DumpFields(output);
 

@@ -35,8 +35,8 @@ OutFiles::OutFiles() {
 	errName = path + SEP + "ERROR.txt";
 	dataPath = path + SEP + "DATA" + SEP + "data.h5";
 
-	remove(&outName[0]); //Converts std::string to char array
-	output.open(&outName[0], std::ofstream::out | std::ofstream::app);
+	// remove(&outName[0]); //Converts std::string to char array
+	output.open(outName.c_str(), std::ofstream::out | std::ofstream::app);
 	if (!output.is_open()) {
 		std::cerr << "Couldn't open '" << outName << "'." << std::endl;
 		TerminateODIS();

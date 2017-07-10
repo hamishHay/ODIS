@@ -84,7 +84,7 @@ int Mesh::CalculateDt(void){
 
 	minDistance = globals->radius.Value() * sin(dLat*radConv) * dLon*radConv;
 
-	dt = minDistance/waveSpeed;
+	dt = 0.7*minDistance/waveSpeed;
 
 	outstring << "\t\t Time step calculated: " << dt <<" s."<< std::endl;
 
